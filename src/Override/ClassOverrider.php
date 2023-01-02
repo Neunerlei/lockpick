@@ -69,16 +69,22 @@ class ClassOverrider
     }
 
     /**
+     * Returns true if the {@see init} method was already executed and the autolaoder is present
+     * @return bool
+     */
+    public static function isInitialized(): bool
+    {
+        return isset(static::$autoLoader);
+    }
+
+    /**
      * Returns the internal autoloader instance we use, to inject our clones
      *
      * @return AutoLoader
      */
     public static function getAutoLoader(): AutoLoader
     {
-        if (!isset(static::$autoLoader)) {
-            throw new \RuntimeException('Sorry, but you have to initialize the class overrider using the "init" method first!');
-        }
-
+        static::assertToBeInitialized();
         return static::$autoLoader;
     }
 
@@ -89,10 +95,7 @@ class ClassOverrider
      */
     public static function setEventDispatcher(EventDispatcherInterface $eventDispatcher): void
     {
-        if (!isset(static::$autoLoader)) {
-            throw new \RuntimeException('Sorry, but you have to initialize the class overrider using the "init" method first!');
-        }
-
+        static::assertToBeInitialized();
         static::getAutoLoader()->getStackResolver()->setEventDispatcher($eventDispatcher);
     }
 
@@ -117,6 +120,7 @@ class ClassOverrider
         bool   $overrule = false
     ): void
     {
+        static::assertToBeInitialized();
         static::$autoLoader->getOverrideList()->registerOverride(...func_get_args());
     }
 
@@ -130,6 +134,7 @@ class ClassOverrider
      */
     public static function canOverrideClass(string $classToOverride, bool $withOverrule = false): bool
     {
+        static::assertToBeInitialized();
         return static::$autoLoader->getOverrideList()->canOverrideClass(...func_get_args());
     }
 
@@ -142,6 +147,7 @@ class ClassOverrider
      */
     public static function hasClassOverride(string $classToOverride): bool
     {
+        static::assertToBeInitialized();
         return static::$autoLoader->getOverrideList()->hasClassOverride(...func_get_args());
     }
 
@@ -154,6 +160,7 @@ class ClassOverrider
      */
     public static function flushStorage(): void
     {
+        static::assertToBeInitialized();
         static::$autoLoader->getStackResolver()->getIoDriver()->flush();
     }
 
@@ -166,6 +173,18 @@ class ClassOverrider
      */
     public static function getNotPreloadableClasses(): array
     {
+        static::assertToBeInitialized();
         return static::$autoLoader->getOverrideList()->getNotPreloadableClasses();
+    }
+
+    /**
+     * Internal helper to validate if the class has been initialized
+     * @return void
+     */
+    protected static function assertToBeInitialized(): void
+    {
+        if (!static::isInitialized()) {
+            throw new \RuntimeException('Sorry, but you have to initialize the class overrider using the "init" method first!');
+        }
     }
 }
