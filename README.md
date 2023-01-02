@@ -223,6 +223,8 @@ copies.
 - The extended class is a modified copy of the original class, so your IDE shift-click will not work as expected.
 - You will see the extended classes and the copied class names instead of the original class in logs and backtraces.
 - Only works for classes that follow the PSR-4 guideline with a single class per file
+- Can cause issues if you are using PHP preloading (especially in Symfony), you need to remove all classes found
+  in `ClassOverrider::getNotPreloadableClasses();` somehow, depending on your framework
 
 ## Postcardware
 

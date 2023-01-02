@@ -13,6 +13,9 @@ use Neunerlei\Lockpick\Override\OverrideList;
 use Neunerlei\Lockpick\Override\OverrideStackResolver;
 use Neunerlei\Lockpick\Test\Fixture\FixtureExtendedOverrideClass;
 use Neunerlei\Lockpick\Test\Fixture\FixtureNotLoadedClass;
+use Neunerlei\Lockpick\Test\Fixture\FixtureOverrideClass;
+use Neunerlei\Lockpick\Test\Fixture\FixturePrivateObject;
+use Neunerlei\Lockpick\Test\Fixture\FixtureSuperExtendedOverrideClass;
 use Neunerlei\Lockpick\Util\ClassLockpick;
 use PHPUnit\Framework\TestCase;
 
@@ -23,6 +26,7 @@ class ClassOverriderTest extends TestCase
     protected function setUp(): void
     {
         ClassOverrider::init(require __DIR__ . '/../../vendor/autoload.php');
+        ClassOverrider::flushStorage();
         $this->loaderBackup = ClassOverrider::getAutoLoader();
         parent::setUp();
     }
@@ -81,5 +85,21 @@ class ClassOverriderTest extends TestCase
         static::assertFalse(ClassOverrider::canOverrideClass(FixtureNotLoadedClass::class));
         static::assertTrue($list->hasClassOverride(FixtureNotLoadedClass::class));
         static::assertFalse($list->canOverrideClass(FixtureNotLoadedClass::class));
+    }
+
+    public function testGenerationOfNonPreloadableClasses(): void
+    {
+        ClassOverrider::init(require __DIR__ . '/../../vendor/autoload.php', true);
+
+        ClassOverrider::registerOverride(FixtureOverrideClass::class, FixturePrivateObject::class);
+        ClassOverrider::registerOverride(FixtureExtendedOverrideClass::class, FixtureOverrideClass::class);
+        ClassOverrider::registerOverride(FixtureSuperExtendedOverrideClass::class, FixtureExtendedOverrideClass::class);
+
+        static::assertEquals([
+            FixtureOverrideClass::class,
+            FixtureExtendedOverrideClass::class,
+            FixtureSuperExtendedOverrideClass::class,
+            FixturePrivateObject::class
+        ], ClassOverrider::getNotPreloadableClasses());
     }
 }

@@ -158,4 +158,21 @@ class OverrideList
 
         return $stack;
     }
+
+    /**
+     * Returns a list of all classes that are considered "not-prealoadable" by the PHP preload feature.
+     * Because if they would be preloaded, this would break our internal logic and provide the classes
+     * before we want them to be provided
+     *
+     * @return array
+     */
+    public function getNotPreloadableClasses(): array
+    {
+        return array_unique(
+            array_merge(
+                array_keys($this->overrideDefinitions),
+                array_values($this->overrideDefinitions)
+            )
+        );
+    }
 }
