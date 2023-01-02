@@ -8,8 +8,8 @@ namespace Neunerlei\Lockpick\Test\Override;
 use Neunerlei\Lockpick\Override\AutoLoader;
 use Neunerlei\Lockpick\Override\OverrideList;
 use Neunerlei\Lockpick\Override\OverrideStackResolver;
-use Neunerlei\Lockpick\Test\Fixture\FixtureNotLoadedClass;
-use Neunerlei\Lockpick\Test\Fixture\FixtureNotLoadedInterface;
+use Neunerlei\Lockpick\Test\Fixture\FixtureAutoloadClass;
+use Neunerlei\Lockpick\Test\Fixture\FixtureAutoloadInterface;
 use Neunerlei\Lockpick\Util\ClassLockpick;
 use PHPUnit\Framework\TestCase;
 
@@ -69,36 +69,6 @@ class AutoLoaderTest extends TestCase
         static::assertSame($list, $loader->getOverrideList());
     }
 
-    public function testSetTestModeInheritance(): void
-    {
-        $listState = false;
-        $resolverState = false;
-
-        $list = $this->createMock(OverrideList::class);
-        $list->method('setTestMode')->willReturnCallback(function ($state) use (&$listState) {
-            $listState = $state;
-        });
-        $resolver = $this->createMock(OverrideStackResolver::class);
-        $resolver->method('setTestMode')->willReturnCallback(function ($state) use (&$resolverState) {
-            $resolverState = $state;
-        });
-
-        $loader = new AutoLoader(
-            $list,
-            $resolver
-        );
-
-        $loader->setTestMode(true);
-
-        static::assertTrue($listState);
-        static::assertTrue($resolverState);
-
-        $loader->setTestMode(false);
-
-        static::assertFalse($listState);
-        static::assertFalse($resolverState);
-    }
-
     public function testLoadClass(): void
     {
         $list = $this->createMock(OverrideList::class);
@@ -112,8 +82,8 @@ class AutoLoaderTest extends TestCase
             $resolver
         );
 
-        static::assertTrue($loader->loadClass(FixtureNotLoadedClass::class));
-        static::assertTrue($loader->loadClass(FixtureNotLoadedInterface::class));
+        static::assertTrue($loader->loadClass(FixtureAutoloadClass::class));
+        static::assertTrue($loader->loadClass(FixtureAutoloadInterface::class));
 
         // Already loaded elements
         static::assertFalse($loader->loadClass(AutoLoader::class));
@@ -128,7 +98,7 @@ class AutoLoaderTest extends TestCase
             $resolver
         );
 
-        static::assertFalse($loader->loadClass(FixtureNotLoadedClass::class));
-        static::assertFalse($loader->loadClass(FixtureNotLoadedInterface::class));
+        static::assertFalse($loader->loadClass(FixtureAutoloadClass::class));
+        static::assertFalse($loader->loadClass(FixtureAutoloadInterface::class));
     }
 }

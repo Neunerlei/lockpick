@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Neunerlei\Lockpick\Test\Override;
 
 
-use Neunerlei\Lockpick\Override\AutoLoader;
 use Neunerlei\Lockpick\Override\Exception\OverriddenClassAlreadyLoadedException;
 use Neunerlei\Lockpick\Override\Exception\OverriddenClassConflictException;
 use Neunerlei\Lockpick\Override\OverrideList;
@@ -46,41 +45,6 @@ class OverrideListTest extends TestCase
             ],
             $l->getClassStack(FixtureNotLoadedClass::class)
         );
-    }
-
-    public function testRegisterOverrideInTestModeWithAutoLoader(): void
-    {
-        $c = 0;
-        $autoLoader = $this->createMock(AutoLoader::class);
-        $autoLoader->method('loadClass')
-            ->willReturnCallback(function () use (&$c) {
-                $c++;
-            });
-
-        $l = new OverrideList();
-        $l->setAutoLoader($autoLoader);
-        $l->setTestMode(true);
-
-        $l->registerOverride(FixtureNotLoadedClass::class, FixtureExtendedOverrideClass::class);
-
-        static::assertEquals(1, $c, 'the "loadClass" method of the AutoLoader class was not executed');
-    }
-
-    public function testRegisterOverrideWithoutTestModeWithAutoLoader(): void
-    {
-        $c = 0;
-        $autoLoader = $this->createMock(AutoLoader::class);
-        $autoLoader->method('loadClass')
-            ->willReturnCallback(function () use (&$c) {
-                $c++;
-            });
-
-        $l = new OverrideList();
-        $l->setAutoLoader($autoLoader);
-
-        $l->registerOverride(FixtureNotLoadedClass::class, FixtureExtendedOverrideClass::class);
-
-        static::assertEquals(0, $c, 'the "loadClass" method of the AutoLoader class was executed, but it shouldn\'t have been');
     }
 
     public function testRegisterOverrideFailIfClassIsAlreadyLoaded(): void

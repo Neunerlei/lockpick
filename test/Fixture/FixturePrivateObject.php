@@ -10,6 +10,7 @@ final class FixturePrivateObject
     private static int $fooStat = 0;
 
     private int $foo = 1;
+    private int $fooNotInitialized;
     protected string $bar = 'test';
 
     protected function testProt(): string

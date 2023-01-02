@@ -69,17 +69,6 @@ class AutoLoader
     }
 
     /**
-     * Used to toggle the internal test mode flag
-     *
-     * @param bool $isTestMode
-     */
-    public function setTestMode(bool $isTestMode): void
-    {
-        $this->overrideList->setTestMode($isTestMode);
-        $this->stackResolver->setTestMode($isTestMode);
-    }
-
-    /**
      * Our own spl autoload function
      *
      * @param $class
@@ -88,6 +77,10 @@ class AutoLoader
      */
     public function loadClass($class): bool
     {
+        if (str_contains($class, 'FixtureOverrideClass')) {
+            print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+            exit();
+        }
         if (class_exists($class, false) || interface_exists($class, false)) {
             return false;
         }

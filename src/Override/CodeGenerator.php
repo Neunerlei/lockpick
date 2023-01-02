@@ -15,26 +15,9 @@ class CodeGenerator
 {
     protected ClassLoader $composerClassLoader;
 
-    /**
-     * True if the script is executed in phpunit
-     *
-     * @var bool
-     */
-    protected bool $isTestMode = false;
-
     public function __construct(ClassLoader $composerClassLoader)
     {
         $this->composerClassLoader = $composerClassLoader;
-    }
-
-    /**
-     * Used to toggle the internal test mode flag
-     *
-     * @param bool $isTestMode
-     */
-    public function setTestMode(bool $isTestMode): void
-    {
-        $this->isTestMode = $isTestMode;
     }
 
     /**
@@ -97,13 +80,13 @@ PHP;
     {
         // Resolve the source file
         $overrideSourceFile = $this->composerClassLoader->findFile($of);
-        if (($overrideSourceFile === false) && !$this->isTestMode) {
+        if ($overrideSourceFile === false) {
             throw new ComposerCouldNotResolveTargetClassException(
                 'Could not create a clone of class: ' . $of
                 . ' because Composer could not resolve it\'s filename!');
         }
 
-        $sourceList = $this->readSource((string)$overrideSourceFile, $of);
+        $sourceList = $this->readSource($overrideSourceFile);
         $sourceList = $this->fixRenameClass($sourceList, $of, $copyClassName);
         $sourceList = $this->fixReturnTypes($sourceList, $of, $copyClassName);
         $sourceList = $this->fixInjectNotice($sourceList, $of);
@@ -120,24 +103,11 @@ PHP;
      * Reads the source of a class as an array of lines
      *
      * @param string $overrideSourceFile The file which contains the class
-     * @param string $of The name of the class to clone
      *
      * @return string[]
      */
-    protected function readSource(string $overrideSourceFile, string $of): array
+    protected function readSource(string $overrideSourceFile): array
     {
-        if ($this->isTestMode && empty($overrideSourceFile)) {
-            // While it looks odd, this is the only way to ensure that the line-endings match between the test files
-            $nl = '
-';
-
-            return [
-                '<?php' . $nl,
-                'namespace ' . Path::classNamespace($of) . ';' . $nl,
-                'class ' . Path::classBasename($of) . '{}' . $nl,
-            ];
-        }
-
         return Fs::readFileAsLines($overrideSourceFile);
     }
 

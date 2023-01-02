@@ -47,9 +47,8 @@ class ClassOverrider
      * @param ClassLoader|AutoLoader $autoLoader Either the composer class loader instance,
      *                                           or an already prepared instance of the internal autoloader.
      *                                           You can use {@see makeAutoLoaderByStoragePath} as factory.
-     * @param bool|mixed $testMode
      */
-    public static function init(ClassLoader|AutoLoader $autoLoader, ?bool $testMode = null): void
+    public static function init(ClassLoader|AutoLoader $autoLoader): void
     {
         if (isset(static::$autoLoader)) {
             static::$autoLoader->unregister();
@@ -58,10 +57,6 @@ class ClassOverrider
         if ($autoLoader instanceof ClassLoader) {
             $autoLoader = static::makeAutoLoaderByStoragePath(sys_get_temp_dir(), $autoLoader);
         }
-
-        $autoLoader->setTestMode(
-            $testMode ?? str_contains($_SERVER['SCRIPT_NAME'] ?? '', 'phpunit')
-        );
 
         $autoLoader->register();
 

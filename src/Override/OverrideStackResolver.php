@@ -33,13 +33,6 @@ class OverrideStackResolver
      */
     protected array $resolvedAliasMap = [];
 
-    /**
-     * True if the script is executed in phpunit
-     *
-     * @var bool
-     */
-    protected bool $isTestMode = false;
-
     public function __construct(IoDriverInterface $driver, \Closure $codeGeneratorFactory, ?EventDispatcherInterface $eventDispatcher = null)
     {
         $this->driver = $driver;
@@ -55,16 +48,6 @@ class OverrideStackResolver
     public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): void
     {
         $this->eventDispatcher = $eventDispatcher;
-    }
-
-    /**
-     * Used to toggle the internal test mode flag
-     *
-     * @param bool $isTestMode
-     */
-    public function setTestMode(bool $isTestMode): void
-    {
-        $this->isTestMode = $isTestMode;
     }
 
     /**
@@ -95,7 +78,7 @@ class OverrideStackResolver
             $stack = $e->getStack();
         }
 
-        $cacheKey = md5(json_encode($stack, JSON_THROW_ON_ERROR) . '-' . $this->isTestMode);
+        $cacheKey = md5(json_encode($stack, JSON_THROW_ON_ERROR));
         if (isset($this->resolvedAliasMap[$cacheKey])) {
             return $this->resolvedAliasMap[$cacheKey];
         }
@@ -199,10 +182,6 @@ class OverrideStackResolver
      */
     public function getCodeGenerator(): CodeGenerator
     {
-        $c = $this->codeGenerator ?? ($this->codeGenerator = ($this->codeGeneratorFactory)());
-
-        $c->setTestMode($this->isTestMode);
-
-        return $c;
+        return $this->codeGenerator ??= ($this->codeGeneratorFactory)();
     }
 }

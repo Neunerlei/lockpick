@@ -29,8 +29,6 @@ class OverrideStackResolverTest extends TestCase
     protected EventDispatcherInterface $eventDispatcher;
     protected CodeGenerator $codeGenerator;
 
-    protected bool $codeGeneratorTestMode = false;
-
     public function testStackResolution(): void
     {
         ob_start();
@@ -99,16 +97,6 @@ class OverrideStackResolverTest extends TestCase
         // Both maps should be equal now
         static::assertEquals($m1, $m2);
 
-    }
-
-    public function testCodeGeneratorTestModeInheritance(): void
-    {
-        $i = $this->makeInstance();
-        static::assertFalse($this->codeGeneratorTestMode);
-        $i->setTestMode(true);
-        static::assertFalse($this->codeGeneratorTestMode);
-        $i->getCodeGenerator();
-        static::assertTrue($this->codeGeneratorTestMode);
     }
 
     protected function getTestStack(): array
@@ -205,16 +193,12 @@ class OverrideStackResolverTest extends TestCase
 
         $this->eventDispatcher = new DummyEventDispatcher();
 
-        $this->codeGeneratorTestMode = false;
         $this->codeGenerator = $this->createMock(CodeGenerator::class);
         $this->codeGenerator->method('getClassCloneContentOf')->willReturnCallback(static function () {
             return json_encode(func_get_args(), JSON_THROW_ON_ERROR & JSON_PRETTY_PRINT);
         });
         $this->codeGenerator->method('getClassAliasContent')->willReturnCallback(static function () {
             return json_encode(func_get_args(), JSON_THROW_ON_ERROR & JSON_PRETTY_PRINT);
-        });
-        $this->codeGenerator->method('setTestMode')->willReturnCallback(function (bool $state) {
-            $this->codeGeneratorTestMode = $state;
         });
 
         return new OverrideStackResolver(

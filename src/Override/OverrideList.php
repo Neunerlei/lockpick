@@ -7,7 +7,6 @@ namespace Neunerlei\Lockpick\Override;
 
 use Neunerlei\Lockpick\Override\Exception\OverriddenClassAlreadyLoadedException;
 use Neunerlei\Lockpick\Override\Exception\OverriddenClassConflictException;
-use Throwable;
 
 class OverrideList
 {
@@ -17,13 +16,6 @@ class OverrideList
      * @var array
      */
     protected array $overrideDefinitions = [];
-
-    /**
-     * True if the script is executed in phpunit
-     *
-     * @var bool
-     */
-    protected bool $isTestMode = false;
 
     /**
      * Special noodle flag to allow override registration, even if the
@@ -40,20 +32,6 @@ class OverrideList
     protected bool $allowToRegisterLoadedClasses = false;
 
     protected AutoLoader $autoLoader;
-
-    /**
-     * Used to toggle the internal test mode flag
-     *
-     * @param bool $isTestMode
-     *
-     * @return self
-     * @internal
-     */
-    public function setTestMode(bool $isTestMode): self
-    {
-        $this->isTestMode = $isTestMode;
-        return $this;
-    }
 
     /**
      * Used to inject the auto-loader for testing purposes
@@ -114,13 +92,6 @@ class OverrideList
         }
 
         $this->overrideDefinitions[$classToOverride] = $classToOverrideWith;
-
-        if ($this->isTestMode && isset($this->autoLoader)) {
-            try {
-                $this->autoLoader->loadClass($classToOverride);
-            } catch (Throwable $e) {
-            }
-        }
     }
 
     /**
@@ -198,10 +169,12 @@ class OverrideList
      */
     public function getNotPreloadableClasses(): array
     {
-        return array_unique(
-            array_merge(
-                array_keys($this->overrideDefinitions),
-                array_values($this->overrideDefinitions)
+        return array_values(
+            array_unique(
+                array_merge(
+                    array_keys($this->overrideDefinitions),
+                    array_values($this->overrideDefinitions)
+                )
             )
         );
     }
