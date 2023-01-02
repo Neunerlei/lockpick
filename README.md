@@ -21,9 +21,17 @@ is like locking in a room without lights, windows and a door they could use to d
 there might be dragons when you start to fiddle with the internals. But, please, please guys and gals all around,
 don't take away the option to fix a bug you did, or extend a feature you did.
 
+## Installation
+
+Install this package using composer:
+
+```
+composer require neunerlei/lockpick
+```
+
 ## What's in the box
 
-## Class lock-pick
+### Class lock-pick
 
 The `Neunerlei\Lockpick\Util\ClassLockpick` class is minimal invasive tool to do stuff with objects that are locked for
 extension. For example, if there is a private property you want to get the data from, or call a private method.
@@ -88,7 +96,7 @@ if(ClassLockpick::hasStaticMethod(LockedClass::class, 'staticFoo')){
 }
 ```
 
-## Class Overrider
+### Class Overrider
 
 Now, let's take a look at the bigger guns, shall we? How about cases where you need/want to extend
 the functionality of a class, or hook into an existing process, without forking the whole package,
@@ -96,7 +104,7 @@ but everything is `final` and `private`. In that case the only solution will be 
 the actual code of the class in order to break them open. The class overrider is a runtime tool
 that lets you do exactly that; override classes in an automagical way.
 
-### Installation
+#### Installation
 
 The installation is rather easy, but you have to know the application you work with.
 
@@ -105,12 +113,6 @@ The installation is rather easy, but you have to know the application you work w
 2. You want to configure your overrides as soon as possible in the lifecycle of your application in order to get the
    most out of this feature.
 3. Your application needs to run using [composer](https://getcomposer.org/)
-
-Install this package using composer:
-
-```
-composer require neunerlei/lockpick
-```
 
 For example in a Symfony application I would suggest doing this at the TOP of the "boot" method in your Kernel.
 As a storage location I would suggest the app's "var" directory and preferably in a sub-directory
@@ -139,7 +141,7 @@ ClassOverrider::init(
 
 If you run your application (or refresh the page), and everything still works without any issue, you are good to go.
 
-### Usage
+#### Usage
 
 After you installed the lass overrider in your application you have to consider two rules:
 
@@ -214,7 +216,7 @@ With that, you can overwrite the parent implementation or extend existing member
 
 With that in place, every part of the code will now use your implementation instead of the original class.
 
-### Installation part 2 - or how to get rid of the copies
+#### Installation part 2 - or how to get rid of the copies
 
 Because we are generating actual files on the drive and reuse them over and over to avoid performance issues,
 you probably want to delete the built files whenever they were updated.
@@ -224,7 +226,7 @@ I would suggest to do that either on composer install/update or whenever your fr
 After you initialized the Overrider, call the `ClassOverrider::flushStorage();` method to remove all compiled class
 copies.
 
-### Caveats
+#### Caveats
 
 - The extended class is a modified copy of the original class, so your IDE shift-click will not work as expected.
 - You will see the extended classes and the copied class names instead of the original class in logs and backtraces.
