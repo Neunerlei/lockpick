@@ -164,7 +164,13 @@ class ClassLockpick
      */
     public function __isset(string $name): bool
     {
-        return $this->hasProperty($name);
+        if (!$this->hasProperty($name)) {
+            return false;
+        }
+
+        $prop = $this->reflector->getProperty($name);
+        $prop->setAccessible(true);
+        return $prop->isInitialized($this->instance);
     }
 
     /**
