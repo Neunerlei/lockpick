@@ -1,0 +1,16 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PhpInternalEntityUsedInspection" enabled="true" level="Internal" enabled_by_default="true" />
+    <inspection_tool class="PhpUnusedAliasInspection" enabled="true" level="UNUSED ENTRY" enabled_by_default="true" />
+    <inspection_tool class="PhpUnusedLocalVariableInspection" enabled="true" level="UNUSED ENTRY" enabled_by_default="true" />
+    <inspection_tool class="PhpUnusedParameterInspection" enabled="true" level="UNUSED ENTRY" enabled_by_default="true" />
+    <inspection_tool class="PhpUnusedPrivateFieldInspection" enabled="true" level="UNUSED ENTRY" enabled_by_default="true" />
+    <inspection_tool class="PhpUnusedPrivateMethodInspection" enabled="true" level="UNUSED ENTRY" enabled_by_default="true" />
+    <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
+      <option name="processCode" value="true" />
+      <option name="processLiterals" value="true" />
+      <option name="processComments" value="true" />
+    </inspection_tool>
+  </profile>
+</component>

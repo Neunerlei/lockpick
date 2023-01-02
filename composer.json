@@ -1,0 +1,31 @@
+{
+  "name": "neunerlei/lockpick",
+  "description": "A list of tools that helps you overcome some arbitrary restrictions while coding",
+  "type": "library",
+  "license": "Apache-2.0",
+  "autoload": {
+    "psr-4": {
+      "Neunerlei\\Lockpick\\": "src/",
+      "Neunerlei\\Lockpick\\Test\\": "test/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Martin Neundorfer",
+      "email": "code@neunerlei.eu"
+    }
+  ],
+  "require": {
+    "neunerlei/filesystem": "^5.3",
+    "neunerlei/inflection": "^2.0",
+    "psr/event-dispatcher": "^1.0"
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "test-cover-clover": "XDEBUG_MODE=coverage phpunit --coverage-clover test/Coverage.xml",
+    "test-cover": "XDEBUG_MODE=coverage phpunit --coverage-html test/Coverage"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
+  }
+}

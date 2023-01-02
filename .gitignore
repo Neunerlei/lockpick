@@ -1,0 +1,11 @@
+composer.lock
+vendor
+.phpunit.result.cache
+
+# IDEA Code Style
+.idea/*
+!.idea/copyright
+!.idea/codeStyles
+!.idea/inspectionProfiles
+!.idea/php-inspections-ea-ultimate.xml
+!.idea/saveactions_settings.xml
