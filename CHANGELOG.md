@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.2](https://github.com/Neunerlei/lockpick/compare/v0.0.1...v0.0.2) (2023-01-03)
+
+
+### Features
+
+* clean up testcases and remove "testMode" remnant ([f2b1b84](https://github.com/Neunerlei/lockpick/commit/f2b1b848068bcfd283c24fed9ca80d50612f628d))
+* no longer ignore composer.lock and remove .ddev dir from archive ([04a3f8b](https://github.com/Neunerlei/lockpick/commit/04a3f8bbf838be6771b585974a307b4d8ea34d56))
+* **Override:** allow userland to re-register already loaded classes ([0b43b67](https://github.com/Neunerlei/lockpick/commit/0b43b671fb29310330c736014b3f14d7abfa0586))
+* **Override:** make it easier to detect if ClassOverrider is initialized ([f629ff3](https://github.com/Neunerlei/lockpick/commit/f629ff3d15fcf9acac4367d82f11c23008c5a1e2))
+
+
+### Bug Fixes
+
+* **ClassLockpick:** ensure that __isset check if the value is actually set ([68acaef](https://github.com/Neunerlei/lockpick/commit/68acaefa8a27f73f2a1e36fff87c6b4e756c1776))
+* fix code generator factory ([703e918](https://github.com/Neunerlei/lockpick/commit/703e918b12bd67d83da38af1ecc55199ca35d0e8))
+
 ### 0.0.1 (2023-01-02)
 
 
