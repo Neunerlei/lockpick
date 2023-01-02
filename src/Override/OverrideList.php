@@ -25,6 +25,20 @@ class OverrideList
      */
     protected bool $isTestMode = false;
 
+    /**
+     * Special noodle flag to allow override registration, even if the
+     * class to be overwritten was already loaded.
+     *
+     * While in 99% of the cases the check for failing on already loaded classes
+     * makes sense and prevents issues, there is a fraction of edge cases where this can cause issues.
+     * For example when a cli command clears the cache and the container is being rebuilt at the same time.
+     *
+     * WARNING: Use this with caution and only if you really need it!
+     *
+     * @var bool
+     */
+    protected bool $allowToRegisterLoadedClasses = false;
+
     protected AutoLoader $autoLoader;
 
     /**
@@ -32,11 +46,13 @@ class OverrideList
      *
      * @param bool $isTestMode
      *
+     * @return self
      * @internal
      */
-    public function setTestMode(bool $isTestMode): void
+    public function setTestMode(bool $isTestMode): self
     {
         $this->isTestMode = $isTestMode;
+        return $this;
     }
 
     /**
@@ -44,11 +60,25 @@ class OverrideList
      *
      * @param AutoLoader $autoLoader
      *
+     * @return self
      * @internal
      */
-    public function setAutoLoader(AutoLoader $autoLoader): void
+    public function setAutoLoader(AutoLoader $autoLoader): self
     {
         $this->autoLoader = $autoLoader;
+        return $this;
+    }
+
+    /**
+     * Defines if it is allowed to register already loaded classes for an override or not
+     * @param bool $state
+     * @return $this
+     * @see self::$allowToRegisterLoadedClasses for further details
+     */
+    public function setAllowToRegisterLoadedClasses(bool $state): self
+    {
+        $this->allowToRegisterLoadedClasses = $state;
+        return $this;
     }
 
     /**
@@ -60,11 +90,11 @@ class OverrideList
      * This method throws an exception if the class is already overwritten by another class
      *
      * @param string $classToOverride The name of the class to overwrite with the class given in
-     *                                        $classToOverrideWith
+     *                                $classToOverrideWith
      * @param string $classToOverrideWith The name of the class that should be used instead of the class defined as
-     *                                        $classToOverride
+     *                                    $classToOverride
      * @param bool $overrule If this is set to true already registered overrides can be changed to a
-     *                                        different definition
+     *                       different definition
      */
     public function registerOverride(
         string $classToOverride,
@@ -72,7 +102,7 @@ class OverrideList
         bool   $overrule = false
     ): void
     {
-        if (class_exists($classToOverride, false)) {
+        if (!$this->allowToRegisterLoadedClasses && class_exists($classToOverride, false)) {
             throw new OverriddenClassAlreadyLoadedException(
                 'The class: ' . $classToOverride . ' can not be overridden, because it is already loaded!');
         }
