@@ -106,6 +106,12 @@ The installation is rather easy, but you have to know the application you work w
    most out of this feature.
 3. Your application needs to run using [composer](https://getcomposer.org/)
 
+Install this package using composer:
+
+```
+composer require neunerlei/lockpick
+```
+
 For example in a Symfony application I would suggest doing this at the TOP of the "boot" method in your Kernel.
 As a storage location I would suggest the app's "var" directory and preferably in a sub-directory
 like `/var/classOverrides`
