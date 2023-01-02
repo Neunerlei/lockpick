@@ -35,7 +35,7 @@ class ClassOverrider
             new OverrideList(),
             new OverrideStackResolver(
                 new DefaultIoDriver($storagePath),
-                fn() => $classLoader,
+                fn() => new CodeGenerator($classLoader),
                 $eventDispatcher
             )
         );
