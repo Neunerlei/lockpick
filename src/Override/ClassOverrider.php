@@ -75,7 +75,7 @@ class ClassOverrider
         $autoLoader = static::getAutoLoader();
 
         foreach ($autoLoader->getOverrideList()->getOverriddenClasses() as $class) {
-            $autoLoader->loadClass($class, true);
+            $autoLoader->buildClass($class);
         }
     }
 

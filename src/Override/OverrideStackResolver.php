@@ -73,12 +73,15 @@ class OverrideStackResolver
      * and automatically including them from their temporary sources.
      * The result is the definition for the TYPO3 ClassAliasMap
      *
-     * @param array $stack
+     * @param array $stack The result of {@see OverrideList::getClassStack} that should be resolved
+     * @param bool $includeFiles If true the files in the stack will be included,
+     *                           if false the files are not included, but just dumped on the file system.
+     *                           This is useful for a forced rebuild
      *
      * @return array
      * @throws \JsonException
      */
-    public function resolve(array $stack): array
+    public function resolve(array $stack, bool $includeFiles = true): array
     {
         if (isset($this->eventDispatcher)) {
             $this->eventDispatcher->dispatch(
@@ -101,9 +104,12 @@ class OverrideStackResolver
             $this->resolveStackEntry((string)$initialClassName, (string)$finalClassName, $classToOverride, $classToOverrideWith);
         }
 
-        foreach ($this->includeList as $aliasFilename) {
-            $this->driver->includeFile($aliasFilename);
+        if ($includeFiles) {
+            foreach ($this->includeList as $aliasFilename) {
+                $this->driver->includeFile($aliasFilename);
+            }
         }
+
         $this->includeList = [];
 
         return $this->resolvedAliasMap[$cacheKey] = [$finalClassName => $initialClassName];
