@@ -9,7 +9,6 @@ use Neunerlei\FileSystem\Path;
 use Neunerlei\Lockpick\Override\CodeGenerator;
 use Neunerlei\Lockpick\Override\Exception\ComposerCouldNotResolveTargetClassException;
 use Neunerlei\Lockpick\Override\Exception\OverrideClassRenamingFailedException;
-use Neunerlei\Lockpick\Test\Fixture\FixtureClassWithPrivateChildren;
 use Neunerlei\Lockpick\Test\Fixture\FixtureInvalidClass;
 use Neunerlei\Lockpick\Test\Fixture\FixtureNotLoadedClass;
 use Neunerlei\Lockpick\Test\Fixture\FixtureOverrideClass;
@@ -54,9 +53,14 @@ if(!class_exists('\\$classToOverride', false)) {
 }
 PHP;
 
-        static::assertEquals($expected, $this->makeInstance()->getClassAliasContent(
+        $actual = $this->makeInstance()->getClassAliasContent(
             $classToOverride, $classToOverrideWith, $finalClassName, $copyClassFullName
-        ));
+        );
+
+        static::assertEquals(
+            $this->normalizeLineEndings($expected),
+            $this->normalizeLineEndings($actual)
+        );
     }
 
     public function testClassCodeGeneration(): void
@@ -204,11 +208,10 @@ PHP;
             FixturePrivateObject::class, 'CopyClass'
         );
 
-        // Fix the line endings, so we can be sure the string equals
-        $expected = str_replace(["\n", "\r\n"], PHP_EOL, $expected);
-        $actual = str_replace(["\n", "\r\n"], PHP_EOL, $actual);
-
-        static::assertEquals($expected, $actual);
+        static::assertEquals(
+            $this->normalizeLineEndings($expected),
+            $this->normalizeLineEndings($actual)
+        );
     }
 
     public function testGetClassCloneContentOfFailIfClassCouldNotBeResolved(): void
@@ -224,6 +227,11 @@ PHP;
         $this->expectExceptionMessage('Failed to rewrite the name of class: FixtureInvalidAutoLoadPathClass to: Baz when creating a copy of class: Neunerlei\Lockpick\Test\Fixture\FixtureInvalidAutoLoadPathClass');
         $ns = Path::classNamespace(FixtureInvalidClass::class);
         $this->makeInstance()->getClassCloneContentOf($ns . '\\FixtureInvalidAutoLoadPathClass', 'Baz');
+    }
+
+    protected function normalizeLineEndings(string $string): string
+    {
+        return str_replace(["\n", "\r\n"], PHP_EOL, $string);
     }
 
     protected function makeInstance(): CodeGenerator
