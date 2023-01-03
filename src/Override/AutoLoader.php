@@ -77,10 +77,6 @@ class AutoLoader
      */
     public function loadClass($class): bool
     {
-        if (str_contains($class, 'FixtureOverrideClass')) {
-            print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-            exit();
-        }
         if (class_exists($class, false) || interface_exists($class, false)) {
             return false;
         }
