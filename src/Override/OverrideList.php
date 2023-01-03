@@ -161,6 +161,15 @@ class OverrideList
     }
 
     /**
+     * Returns a list of all classes that have been registered as being overwritten
+     * @return array
+     */
+    public function getOverriddenClasses(): array
+    {
+        return array_keys($this->overrideDefinitions);
+    }
+
+    /**
      * Returns a list of all classes that are considered "not-prealoadable" by the PHP preload feature.
      * Because if they would be preloaded, this would break our internal logic and provide the classes
      * before we want them to be provided

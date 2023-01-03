@@ -71,13 +71,14 @@ class AutoLoader
     /**
      * Our own spl autoload function
      *
-     * @param $class
-     *
+     * @param string $class The name of the class that be loaded
+     * @param bool|null $ignoreExistence If set to true, the resolution will be executed even for already existing(loaded) classes.
+     *                                   This is useful for a forced rebuild
      * @return bool
      */
-    public function loadClass($class): bool
+    public function loadClass(string $class, ?bool $ignoreExistence = null): bool
     {
-        if (class_exists($class, false) || interface_exists($class, false)) {
+        if ($ignoreExistence !== true && (class_exists($class, false) || interface_exists($class, false))) {
             return false;
         }
 

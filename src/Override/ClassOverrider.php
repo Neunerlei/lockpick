@@ -7,6 +7,7 @@ namespace Neunerlei\Lockpick\Override;
 
 use Composer\Autoload\ClassLoader;
 use Neunerlei\Lockpick\Override\Driver\DefaultIoDriver;
+use Neunerlei\Lockpick\Override\Driver\IoDriverInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 class ClassOverrider
@@ -50,7 +51,7 @@ class ClassOverrider
      */
     public static function init(ClassLoader|AutoLoader $autoLoader): void
     {
-        if (isset(static::$autoLoader)) {
+        if (static::isInitialized()) {
             static::$autoLoader->unregister();
         }
 
@@ -61,6 +62,21 @@ class ClassOverrider
         $autoLoader->register();
 
         static::$autoLoader = $autoLoader;
+    }
+
+    /**
+     * Can be used to build all override clones and aliases that have been registered into the filesystem
+     * @return void
+     */
+    public static function build(): void
+    {
+        static::assertToBeInitialized();
+
+        $autoLoader = static::getAutoLoader();
+
+        foreach ($autoLoader->getOverrideList()->getOverriddenClasses() as $class) {
+            $autoLoader->loadClass($class, true);
+        }
     }
 
     /**
@@ -84,14 +100,31 @@ class ClassOverrider
     }
 
     /**
+     * Returns the instance of the io driver used for file system operations
+     * @return IoDriverInterface
+     */
+    public static function getIoDriver(): IoDriverInterface
+    {
+        return static::getAutoLoader()->getStackResolver()->getIoDriver();
+    }
+
+    /**
      * Allows you to inject the event dispatcher instance even after the autoloader has already been registered
      * @param EventDispatcherInterface $eventDispatcher
      * @return void
      */
     public static function setEventDispatcher(EventDispatcherInterface $eventDispatcher): void
     {
-        static::assertToBeInitialized();
         static::getAutoLoader()->getStackResolver()->setEventDispatcher($eventDispatcher);
+    }
+
+    /**
+     * Returns the internal event dispatcher instance or null if none was registered
+     * @return EventDispatcherInterface|null
+     */
+    public static function getEventDispatcher(): ?EventDispatcherInterface
+    {
+        return static::getAutoLoader()->getStackResolver()->getEventDispatcher();
     }
 
     /**
@@ -115,8 +148,7 @@ class ClassOverrider
         bool   $overrule = false
     ): void
     {
-        static::assertToBeInitialized();
-        static::$autoLoader->getOverrideList()->registerOverride(...func_get_args());
+        static::getAutoLoader()->getOverrideList()->registerOverride(...func_get_args());
     }
 
     /**
@@ -129,8 +161,7 @@ class ClassOverrider
      */
     public static function canOverrideClass(string $classToOverride, bool $withOverrule = false): bool
     {
-        static::assertToBeInitialized();
-        return static::$autoLoader->getOverrideList()->canOverrideClass(...func_get_args());
+        return static::getAutoLoader()->getOverrideList()->canOverrideClass(...func_get_args());
     }
 
     /**
@@ -142,8 +173,7 @@ class ClassOverrider
      */
     public static function hasClassOverride(string $classToOverride): bool
     {
-        static::assertToBeInitialized();
-        return static::$autoLoader->getOverrideList()->hasClassOverride(...func_get_args());
+        return static::getAutoLoader()->getOverrideList()->hasClassOverride(...func_get_args());
     }
 
     /**
@@ -155,8 +185,7 @@ class ClassOverrider
      */
     public static function flushStorage(): void
     {
-        static::assertToBeInitialized();
-        static::$autoLoader->getStackResolver()->getIoDriver()->flush();
+        static::getIoDriver()->flush();
     }
 
     /**
@@ -168,8 +197,7 @@ class ClassOverrider
      */
     public static function getNotPreloadableClasses(): array
     {
-        static::assertToBeInitialized();
-        return static::$autoLoader->getOverrideList()->getNotPreloadableClasses();
+        return static::getAutoLoader()->getOverrideList()->getNotPreloadableClasses();
     }
 
     /**

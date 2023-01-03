@@ -51,6 +51,15 @@ class OverrideStackResolver
     }
 
     /**
+     * Returns the internal event dispatcher instance or null if none was registered
+     * @return EventDispatcherInterface|null
+     */
+    public function getEventDispatcher(): ?EventDispatcherInterface
+    {
+        return $this->eventDispatcher;
+    }
+
+    /**
      * Returns the instance of the io driver used for file system operations
      * @return IoDriverInterface
      */
