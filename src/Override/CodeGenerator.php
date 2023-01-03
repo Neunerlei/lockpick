@@ -8,16 +8,104 @@ namespace Neunerlei\Lockpick\Override;
 use Composer\Autoload\ClassLoader;
 use Neunerlei\FileSystem\Fs;
 use Neunerlei\FileSystem\Path;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassAlias\BaseCodeProvidingManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassClone\ClassRenamingManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassClone\FinalModifierManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassClone\HeaderInjectionManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassClone\PrivateToProtectedManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\ClassClone\SelfReferenceManipulator;
+use Neunerlei\Lockpick\Override\CodeManipulation\CodeManipulatorInterface;
 use Neunerlei\Lockpick\Override\Exception\ComposerCouldNotResolveTargetClassException;
-use Neunerlei\Lockpick\Override\Exception\OverrideClassRenamingFailedException;
 
 class CodeGenerator
 {
     protected ClassLoader $composerClassLoader;
 
+    /**
+     * @var CodeManipulatorInterface[]
+     */
+    protected array $classCloneManipulators = [];
+
+    /**
+     * @var CodeManipulatorInterface[]
+     */
+    protected array $classAliasManipulators = [];
+
     public function __construct(ClassLoader $composerClassLoader)
     {
         $this->composerClassLoader = $composerClassLoader;
+
+        $this->addClassCloneManipulator(new FinalModifierManipulator());
+        $this->addClassCloneManipulator(new PrivateToProtectedManipulator());
+        $this->addClassCloneManipulator(new ClassRenamingManipulator());
+        $this->addClassCloneManipulator(new SelfReferenceManipulator());
+        $this->addClassCloneManipulator(new HeaderInjectionManipulator());
+
+        $this->addClassAliasManipulator(new BaseCodeProvidingManipulator());
+    }
+
+    /**
+     * Returns the list of all registered code manipulators, responsible for modifying the class clone code
+     * @return CodeManipulatorInterface[]
+     */
+    public function getClassCloneManipulators(): array
+    {
+        return $this->classCloneManipulators;
+    }
+
+    /**
+     * Sets the list of all registered code manipulators, responsible for modifying the class clone code
+     * @param CodeManipulatorInterface[] $manipulators A list of code manipulator instances
+     * @return $this
+     */
+    public function setClassCloneManipulators(array $manipulators): self
+    {
+        $this->classCloneManipulators = [];
+        array_map([$this, 'addClassCloneManipulator'], $manipulators);
+        return $this;
+    }
+
+    /**
+     * Adds a new code manipulator to the list, responsible for modifying the class clone code
+     * @param CodeManipulatorInterface $manipulator
+     * @return $this
+     */
+    public function addClassCloneManipulator(CodeManipulatorInterface $manipulator): self
+    {
+        $this->classCloneManipulators[] = $manipulator;
+        return $this;
+    }
+
+    /**
+     * Returns the list of all registered code manipulators, responsible for generating/modifying the class alias code
+     * @return CodeManipulatorInterface[]
+     */
+    public function getClassAliasManipulators(): array
+    {
+        return $this->classAliasManipulators;
+    }
+
+    /**
+     * Adds a new code manipulator to the list, responsible for generating/modifying the class alias code
+     * @param CodeManipulatorInterface[] $manipulators A list of code manipulator instances
+     * @return $this
+     */
+    public function setClassAliasManipulators(array $manipulators): self
+    {
+        $this->classAliasManipulators = [];
+        array_map([$this, 'addClassAliasManipulator'], $manipulators);
+        return $this;
+    }
+
+    /**
+     * Adds a new code manipulator to the list, responsible for generating/modifying the class alias code
+     * @param CodeManipulatorInterface $manipulator
+     * @return $this
+     */
+    public function addClassAliasManipulator(CodeManipulatorInterface $manipulator): self
+    {
+        $this->classAliasManipulators[] = $manipulator;
+        return $this;
     }
 
     /**
@@ -37,33 +125,22 @@ class CodeGenerator
         string $copyClassFullName
     ): string
     {
-        $namespace = Path::classNamespace($classToOverride);
-        $baseName = Path::classBasename($classToOverride);
+        $context = [
+            'classToOverride' => $classToOverride,
+            'classToOverrideNamespace' => Path::classNamespace($classToOverride),
+            'classToOverrideBaseName' => Path::classBasename($classToOverride),
+            'classToOverrideWith' => $classToOverrideWith,
+            'copyClassName' => $copyClassFullName,
+            'finalClassName' => $finalClassName
+        ];
 
-        return <<<PHP
-<?php
-declare(strict_types=1);
-/**
- * CLASS OVERRIDE GENERATOR - GENERATED FILE
- * This file is generated dynamically! You should not edit its contents,
- * because they will be lost as soon as the storage is cleared
- *
- * The original class can be found here:
- * @see \\$classToOverride
- *
- * The clone of the original class can be found here:
- * @see \\$copyClassFullName
- *
- * The class which is used as override can be found here:
- * @see \\$finalClassName
- */
-Namespace $namespace;
-if(!class_exists('\\$classToOverride', false)) {
+        $content = '';
 
-    class $baseName
-        extends \\$classToOverrideWith {}
-}
-PHP;
+        foreach ($this->classAliasManipulators as $manipulator) {
+            $content = $manipulator->apply($content, CodeManipulatorInterface::TYPE_CLASS_ALIAS, $context);
+        }
+
+        return $content;
     }
 
     /**
@@ -71,208 +148,48 @@ PHP;
      * The copy has a unique name and all references, like return types and type hints will be replaced by said, new
      * name.
      *
-     * @param string $of The real name of the class to create a copy of
-     * @param string $copyClassName The new name of the class after the copy took place
+     * @param string $classToOverride The real name of the class to create a copy of (including the namespace)
+     * @param string $copyClassName The new name of the class after the copy took place (including the namespace)
      *
      * @return string
      */
-    public function getClassCloneContentOf(string $of, string $copyClassName): string
+    public function getClassCloneContentOf(string $classToOverride, string $copyClassName): string
     {
         // Resolve the source file
-        $overrideSourceFile = $this->composerClassLoader->findFile($of);
-        if ($overrideSourceFile === false) {
+        $classToOverrideFile = $this->composerClassLoader->findFile($classToOverride);
+        if ($classToOverrideFile === false) {
             throw new ComposerCouldNotResolveTargetClassException(
-                'Could not create a clone of class: ' . $of
+                'Could not create a clone of class: ' . $classToOverride
                 . ' because Composer could not resolve it\'s filename!');
         }
 
-        $sourceList = $this->readSource($overrideSourceFile);
-        $sourceList = $this->fixRenameClass($sourceList, $of, $copyClassName);
-        $sourceList = $this->fixReturnTypes($sourceList, $of, $copyClassName);
-        $sourceList = $this->fixInjectNotice($sourceList, $of);
+        $content = $this->readSource($classToOverrideFile);
 
-        // Now, some good old string manipulation
-        return $this->fixRemoveFinalModifier(
-            $this->fixUnlockPrivateChildren(
-                $this->fixSelfReferences(implode($sourceList), $of)
-            )
-        );
+        $context = [
+            'classToOverride' => $classToOverride,
+            'classToOverrideNamespace' => Path::classNamespace($classToOverride),
+            'classToOverrideBaseName' => Path::classBasename($classToOverride),
+            'classToOverrideFile' => $classToOverrideFile,
+            'copyClassName' => $copyClassName,
+            'originalCode' => $content,
+        ];
+
+        foreach ($this->classCloneManipulators as $manipulator) {
+            $content = $manipulator->apply($content, CodeManipulatorInterface::TYPE_CLASS_CLONE, $context);
+        }
+
+        return $content;
     }
 
     /**
-     * Reads the source of a class as an array of lines
+     * Reads the source of a class as a string
      *
      * @param string $overrideSourceFile The file which contains the class
      *
-     * @return string[]
-     */
-    protected function readSource(string $overrideSourceFile): array
-    {
-        return Fs::readFileAsLines($overrideSourceFile);
-    }
-
-    /**
-     * Renames the required class to our given $copyClassName
-     *
-     * @param array $source
-     * @param string $of
-     * @param string $copyClassName
-     *
-     * @return array
-     */
-    protected function fixRenameClass(array $source, string $of, string $copyClassName): array
-    {
-        $className = Path::classBasename($of);
-        $nameChanged = false;
-        foreach ($source as $k => $line) {
-            if (!preg_match('~(class\\s+)(.*?)(?:\\s*(?:;|$|{|\\n)|\\s+\\w|\\s+})~si', ltrim($line), $m)) {
-                continue;
-            }
-            if ($m[2] !== $className) {
-                continue;
-            }
-            $nameChanged = true;
-            $find = $m[1] . $m[2];
-            $replaceWith = $m[1] . $copyClassName;
-            $source[$k] = str_replace($find, $replaceWith, $line);
-            break;
-        }
-
-        // Fail if we could not rewrite the class
-        if (!$nameChanged) {
-            throw new OverrideClassRenamingFailedException(
-                'Failed to rewrite the name of class: ' . $className . ' to: ' .
-                $copyClassName . ' when creating a copy of class: ' . $of);
-        }
-
-        return $source;
-    }
-
-    /**
-     * Rewrites the (at)return types for the methods of the class
-     *
-     * @param array $source
-     * @param string $of
-     * @param string $copyClassName
-     *
-     * @return array
-     */
-    protected function fixReturnTypes(array $source, string $of, string $copyClassName): array
-    {
-        $className = Path::classBasename($of);
-        foreach ($source as $k => $line) {
-            if (stripos($line, '@return') === false) {
-                continue;
-            }
-            // @todo we need to adjust this to work with union types
-            $pattern = '~(^\\s*\\*\\s*@return\\s+)' . preg_quote($className, '~') . '~si';
-            $source[$k] = preg_replace($pattern, '$1' . $copyClassName, $line);
-            $pattern = '~(^\\s*\\*\\s*@return\\s+)\\\\?' . preg_quote($of, '~') . '~si';
-            $source[$k] = preg_replace($pattern, '$1' . $copyClassName, $source[$k]);
-        }
-
-        return $source;
-    }
-
-    /**
-     * Injects the copy notice after the first opening PHP tag
-     *
-     * @param array $source
-     * @param string $of
-     *
-     * @return array
-     */
-    protected function fixInjectNotice(array $source, string $of): array
-    {
-        $linesBefore = [];
-        foreach ($source as $k => $line) {
-            if (str_contains($line, '<?php') || str_contains($line, '<?=') || str_contains($line, '<?')) {
-                $notice = <<<PHP
-/**
- * CLASS OVERRIDE GENERATOR - GENERATED FILE
- * This file is generated dynamically! You should not edit its contents,
- * because they will be lost as soon as the storage is cleared
- *
- * THIS FILE IS AUTOMATICALLY GENERATED!
- *
- * This is a copy of the class: $of
- *
- * @see $of
- */
-
-PHP;
-
-                return array_merge(
-                    $linesBefore,
-                    [$line],
-                    [$notice],
-                    array_slice($source, $k + 1)
-                );
-            }
-
-            // Theoretically this should never happen...
-            // @codeCoverageIgnoreStart
-            $linesBefore[] = $line;
-            // @codeCoverageIgnoreEnd
-        }
-
-        // Neither should this, but I keep it as a backup if there is somehow HTML before the PHP code
-        // @codeCoverageIgnoreStart
-        return $source;
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * Unlocks all "private" methods and properties to be "protected"
-     *
-     * @param string $source
-     *
      * @return string
      */
-    protected function fixUnlockPrivateChildren(string $source): string
+    protected function readSource(string $overrideSourceFile): string
     {
-        return preg_replace_callback('~(^|\\s|\\t)private(\\s+(?:static\\s|final\\s)?(?:\$|function|const))~i',
-            static function ($m) {
-                [, $before, $after] = $m;
-
-                return $before . 'protected' . $after;
-            }, $source);
-    }
-
-    /**
-     * Resolves all self references of the class to the new copy
-     *
-     * @param string $source
-     * @param string $of
-     *
-     * @return string
-     */
-    protected function fixSelfReferences(string $source, string $of): string
-    {
-        $source = str_replace('__CLASS__', '\\' . rtrim($of, '\\') . '::class', $source);
-
-        // Replace all "self::" references with "static::" to allow external overrides
-        return preg_replace_callback('~(^|\\s|\\t|[();.=\-+/])self::([$\w])~i',
-            static function ($m) {
-                [, $before, $after] = $m;
-
-                return $before . 'static::' . $after;
-            }, $source);
-    }
-
-    /**
-     * Removes all "final" modifiers from the class declaration and methods
-     *
-     * @param string $source
-     *
-     * @return string
-     */
-    protected function fixRemoveFinalModifier(string $source): string
-    {
-        return preg_replace(
-            '~(^|\\s|\\t)final\\s+((?:protected\\s|private\\s|public\\s|static\\s|abstract\\s)*(?:function|class))~',
-            '$1$2',
-            $source
-        );
+        return Fs::readFile($overrideSourceFile);
     }
 }
