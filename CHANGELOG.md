@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.8](https://github.com/Neunerlei/lockpick/compare/v0.0.7...v0.0.8) (2023-01-04)
+
+
+### Bug Fixes
+
+* **Override:** allow resolving overrides after building classes ([f1929e0](https://github.com/Neunerlei/lockpick/commit/f1929e0a572b472753791bcc0feea9ae26354aa2))
+
 ### [0.0.7](https://github.com/Neunerlei/lockpick/compare/v0.0.6...v0.0.7) (2023-01-04)
 
 
