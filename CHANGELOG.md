@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.7](https://github.com/Neunerlei/lockpick/compare/v0.0.6...v0.0.7) (2023-01-04)
+
+
+### Features
+
+* **Override:** allow overrides to be build without including their files ([eceea28](https://github.com/Neunerlei/lockpick/commit/eceea28455680321681b5ce18889c9e714652a1c))
+
 ### [0.0.6](https://github.com/Neunerlei/lockpick/compare/v0.0.5...v0.0.6) (2023-01-04)
 
 
