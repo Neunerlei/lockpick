@@ -91,7 +91,7 @@ class OverrideStackResolver
         }
 
         $cacheKey = md5(json_encode($stack, JSON_THROW_ON_ERROR));
-        if (isset($this->resolvedAliasMap[$cacheKey])) {
+        if ($includeFiles && isset($this->resolvedAliasMap[$cacheKey])) {
             return $this->resolvedAliasMap[$cacheKey];
         }
 
@@ -104,15 +104,19 @@ class OverrideStackResolver
             $this->resolveStackEntry((string)$initialClassName, (string)$finalClassName, $classToOverride, $classToOverrideWith);
         }
 
+        $out = [$finalClassName => $initialClassName];
+
         if ($includeFiles) {
             foreach ($this->includeList as $aliasFilename) {
                 $this->driver->includeFile($aliasFilename);
             }
+
+            $this->resolvedAliasMap[$cacheKey] = $out;
         }
 
         $this->includeList = [];
 
-        return $this->resolvedAliasMap[$cacheKey] = [$finalClassName => $initialClassName];
+        return $out;
     }
 
     /**
