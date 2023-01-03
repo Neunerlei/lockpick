@@ -152,14 +152,14 @@ class OverrideStackResolver
 
         $codeGenerator = $this->getCodeGenerator();
         $cloneContent = $codeGenerator->getClassCloneContentOf(
-            $classToOverride, $copyClassName);
+            $classToOverride, $copyClassFullName);
         $aliasContent = $codeGenerator->getClassAliasContent(
             $classToOverride, $classToOverrideWith, $finalClassName, $copyClassFullName);
 
         if (isset($this->eventDispatcher)) {
             $e = new ClassOverrideContentFilterEvent(
                 $classToOverride,
-                $copyClassName,
+                $copyClassFullName,
                 $initialClassName,
                 $finalClassName,
                 $cloneContent,

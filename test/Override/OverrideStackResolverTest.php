@@ -110,6 +110,7 @@ class OverrideStackResolverTest extends TestCase
 
     protected function getExpectedEventArgs(string $classToOverride): array
     {
+        $namespace = Path::classNamespace($classToOverride);
         $basename = Inflector::toFile($classToOverride);
         $cloneFilename = $basename . '-clone.php';
         $aliasFilename = $basename . '.php';
@@ -119,7 +120,7 @@ class OverrideStackResolverTest extends TestCase
             case FixtureNotLoadedClass::class:
                 return [
                     FixtureNotLoadedClass::class,
-                    ClassOverrider::CLASS_COPY_PREFIX . 'FixtureNotLoadedClass',
+                    $namespace . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureNotLoadedClass',
                     FixtureNotLoadedClass::class,
                     FixtureSuperExtendedOverrideClass::class,
                     $files[$cloneFilename],
@@ -128,7 +129,7 @@ class OverrideStackResolverTest extends TestCase
             case FixtureOverrideClass::class:
                 return [
                     FixtureOverrideClass::class,
-                    ClassOverrider::CLASS_COPY_PREFIX . 'FixtureOverrideClass',
+                    $namespace . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureOverrideClass',
                     FixtureNotLoadedClass::class,
                     FixtureSuperExtendedOverrideClass::class,
                     $files[$cloneFilename],
@@ -137,7 +138,7 @@ class OverrideStackResolverTest extends TestCase
             case FixtureExtendedOverrideClass::class:
                 return [
                     FixtureExtendedOverrideClass::class,
-                    ClassOverrider::CLASS_COPY_PREFIX . 'FixtureExtendedOverrideClass',
+                    $namespace . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureExtendedOverrideClass',
                     FixtureNotLoadedClass::class,
                     FixtureSuperExtendedOverrideClass::class,
                     $files[$cloneFilename],
@@ -155,7 +156,7 @@ class OverrideStackResolverTest extends TestCase
         return [
             'neunerlei-lockpick-test-fixture-fixturenotloadedclass-clone.php' => [
                 FixtureNotLoadedClass::class,
-                ClassOverrider::CLASS_COPY_PREFIX . 'FixtureNotLoadedClass',
+                $ns . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureNotLoadedClass',
             ],
             'neunerlei-lockpick-test-fixture-fixturenotloadedclass.php' => [
                 FixtureNotLoadedClass::class,
@@ -165,7 +166,7 @@ class OverrideStackResolverTest extends TestCase
             ],
             'neunerlei-lockpick-test-fixture-fixtureoverrideclass-clone.php' => [
                 FixtureOverrideClass::class,
-                ClassOverrider::CLASS_COPY_PREFIX . 'FixtureOverrideClass',
+                $ns . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureOverrideClass',
             ],
             'neunerlei-lockpick-test-fixture-fixtureoverrideclass.php' => [
                 FixtureOverrideClass::class,
@@ -175,7 +176,7 @@ class OverrideStackResolverTest extends TestCase
             ],
             'neunerlei-lockpick-test-fixture-fixtureextendedoverrideclass-clone.php' => [
                 FixtureExtendedOverrideClass::class,
-                ClassOverrider::CLASS_COPY_PREFIX . 'FixtureExtendedOverrideClass',
+                $ns . '\\' . ClassOverrider::CLASS_COPY_PREFIX . 'FixtureExtendedOverrideClass',
             ],
             'neunerlei-lockpick-test-fixture-fixtureextendedoverrideclass.php' => [
                 FixtureExtendedOverrideClass::class,
