@@ -107,7 +107,12 @@ class CopyClass implements FixtureInterface
 
     public function __construct(protected int \$param, protected string \$constructorParam, bool \$paramB)
     {
+        \$string = '{';
+        \$string .= "}";
 
+        \$tpl = <<<TPL
+    {{hello    
+TPL;
     }
 
     protected function testProt(): string
@@ -194,6 +199,7 @@ class CopyClass implements FixtureInterface
      */
     static protected function internal(): static
     {
+        return new FixturePrivateObject();
     }
 
     /**
@@ -201,6 +207,7 @@ class CopyClass implements FixtureInterface
      */
     static protected function internalFull(): static
     {
+        return new FixturePrivateObject();
     }
 }
 PHP;

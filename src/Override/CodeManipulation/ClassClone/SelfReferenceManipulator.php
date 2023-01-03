@@ -92,8 +92,6 @@ class SelfReferenceManipulator implements CodeManipulatorInterface
      */
     protected function resolveMethodBlocks(string $code): array
     {
-        $length = strlen($code);
-
         $isInClass = false;
         $nextBraceIsClassOpener = false;
         $classList = [];
@@ -107,22 +105,26 @@ class SelfReferenceManipulator implements CodeManipulatorInterface
 
         $tmp = '';
 
-        for ($i = 0; $i < $length; $i++) {
-            $char = $code[$i];
-            $isBrace = $char === '{';
-            $isBraceClosing = $char === '}';
+        foreach (token_get_all($code) as $token) {
+            $isBrace = $isBraceClosing = false;
 
-            $tmp .= $char;
+            if (is_string($token)) {
+                $isBrace = $token === '{';
+                $isBraceClosing = $token === '}';
+                $token = [0 => -1, 1 => $token];
+            }
 
-            if (!$isInClass && str_ends_with($tmp, 'class ')) {
+            $tmp .= $token[1] ?? '';
+
+            if (!$isInClass && $token[0] === T_CLASS) {
                 $nextBraceIsClassOpener = true;
                 $tmp = '';
                 continue;
             }
 
             if ($isInMethod) {
-                $methodTmp .= $char;
-            } elseif ($isInClass && str_ends_with($tmp, 'function ')) {
+                $methodTmp .= $token[1] ?? '';
+            } elseif ($isInClass && $token[0] === T_FUNCTION) {
                 $nextBraceIsMethodOpener = true;
                 $tmp = '';
                 continue;
@@ -172,6 +174,12 @@ class SelfReferenceManipulator implements CodeManipulatorInterface
                     }
                 }
             }
+
+        }
+
+        if ($classLevel !== 0 || $methodLevel !== 0) {
+            trigger_error('Failed to parse class content! Skipping self reference manipulation to avoid issues', E_USER_WARNING);
+            return [];
         }
 
         return $classList;

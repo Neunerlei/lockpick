@@ -27,7 +27,12 @@ final class FixturePrivateObject implements FixtureInterface
 
     public function __construct(protected int $param, private string $constructorParam, bool $paramB)
     {
+        $string = '{';
+        $string .= "}";
 
+        $tpl = <<<TPL
+    {{hello    
+TPL;
     }
 
     protected function testProt(): string
@@ -115,6 +120,7 @@ final class FixturePrivateObject implements FixtureInterface
      */
     final static private function internal(): FixturePrivateObject
     {
+        return new FixturePrivateObject();
     }
 
     /**
@@ -122,5 +128,6 @@ final class FixturePrivateObject implements FixtureInterface
      */
     final static private function internalFull(): FixturePrivateObject
     {
+        return new FixturePrivateObject();
     }
 }
