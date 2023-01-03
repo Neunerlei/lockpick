@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "794102bc60374b95c12d9642045c4b06",
+    "content-hash": "ef0a81b31c0f78fdec30942104c28eac",
     "packages": [
         {
             "name": "neunerlei/filesystem",
@@ -2458,5 +2458,6 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.3.0",
+    "version": "0.0.4"
 }
