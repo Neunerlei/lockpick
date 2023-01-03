@@ -2,24 +2,26 @@
 
 ## TLDR
 
-This is a package that allows you to disable all locks that another author might impose on code you use in your project.
-It contains some tools that I use for years now and work quite well.
+This is a package that allows you to disable ALL locks that another author might have imposed
+on code you use in your project. It contains some tools that I use for years now and work quite well.
 
 ## WARNING
 
-- Expect there to be a LOT of inflection happening
-- If you break open third-party code be sure that **YOU KNOW** what you are doing and the code might change and so
+- Expect there to be a LOT of reflection and string manipulation happening 🙈
+- If you break open third-party code be sure that **YOU KNOW** what you are doing, and that the code might change and so
   your code needs to be flexible enough not to break.
 
 ## Rambling
 
-While I understand why principles like SOLID exist and why you can easily get in trouble if you start to modify
-third-party code. In a day-to-day basis, where you need to find solutions `private` and `final` are two words that bring
+While I understand why principles like SOLID exist, and why you can easily get in trouble if you start to modify
+third-party code. In a day-to-day basis, where you need to find solutions; `private` and `final` are two words that
+bring
 me to the brink of cringe every time I see them. Making something private AND final in code other developers might use
-is like locking in a room without lights, windows and a door they could use to do their job. If you as an author use
+is like locking someone into a room without lights, windows and a door they could use to do their job. If you as an
+author use
 `protected` and someone modifies that code, without it being clearly marked as "@api" it should be fairly clear that
-there might be dragons when you start to fiddle with the internals. But, please, please guys and gals all around,
-don't take away the option to fix a bug you did, or extend a feature you did.
+there might be dragons. But, please, please guys and gals all around the world,
+don't take away the option from others to fix a bug, or extend a feature you did.
 
 ## Installation
 
@@ -96,19 +98,55 @@ if(ClassLockpick::hasStaticMethod(LockedClass::class, 'staticFoo')){
 }
 ```
 
+#### A word of advice
+
+While it is possible to use the `ClassLockpick`, you should always ask yourself if it is really needed.
+If you want to access a protected property or a method on another object, you can always use an adapter class,
+like this:
+
+```php
+<?php
+
+class SomeClass {
+    protected int $property = 1;
+    
+    protected function method(): string{
+        return 'hello';
+    }
+}
+
+class SomeClassAdapter extends SomeClass {
+    public static function getInstanceProperty(SomeClass $instance): int {
+        return $instance->property;
+    }
+    
+    public static function runInstanceMethod(SomeClass $instance): string {
+        return $instance->method();
+    }
+}
+
+$i = new SomeClass();
+
+echo SomeClassAdapter::getInstanceProperty($i); // 1
+echo SomeClassAdapter::runInstanceMethod($i); // 'hello' 
+```
+
+That way your code does not depend on Reflection, is easy to parse(read) for your IDE and allows extendability for
+future changes.
+
 ### Class Overrider
 
 Now, let's take a look at the bigger guns, shall we? How about cases where you need/want to extend
 the functionality of a class, or hook into an existing process, without forking the whole package,
-but everything is `final` and `private`. In that case the only solution will be to modify
-the actual code of the class in order to break them open. The class overrider is a runtime tool
+but everything is `final` and `private`? In that case the only solution will be to modify
+the actual code of the class in order to break them open. The Class Overrider is a runtime tool
 that lets you do exactly that; override classes in an automagical way.
 
 #### Installation
 
-The installation is rather easy, but you have to know the application you work with.
+The installation is easy(ish), but you have to know the application you work with.
 
-1. You need to know a location where we can securely store compiled php classes. (Writable directory outside the
+1. You need to know a location where we can **securely** store compiled php classes. (Writable directory outside the
    docroot)
 2. You want to configure your overrides as soon as possible in the lifecycle of your application in order to get the
    most out of this feature.
@@ -116,7 +154,7 @@ The installation is rather easy, but you have to know the application you work w
 
 For example in a Symfony application I would suggest doing this at the TOP of the "boot" method in your Kernel.
 As a storage location I would suggest the app's "var" directory and preferably in a sub-directory
-like `/var/classOverrides`
+like `/var/classOverrides` (**cough** or use the [Symfony bundle](https://github.com/Neunerlei/lockpick-bundle))
 
 ```php
 <?php
@@ -143,57 +181,63 @@ If you run your application (or refresh the page), and everything still works wi
 
 #### Usage
 
-After you installed the lass overrider in your application you have to consider two rules:
+After you installed the Class Overrider in your application you have to consider two rules:
 
 1. make sure the class you want to overwrite is not already loaded via auto-loader or direct include
 2. your class has to be loadable using composer's auto-load functionality
 
-If your class matches the criteria you can call the overrider in your code like so.
-Imagine you have a class like this, which comes from a third-party
-package:
+If your class matches the criteria you can call the overrider in your code like so;
+Imagine you have a class like this, which comes from a third-party package:
 
 ```php
 <?php
 namespace ForeignVendor\ForeignNamespace;
 final class TargetClass {
     public function foo(){
-        // Does fancy stuff
+        // Returns interesting stuff
+        return 'foo';
     }
 
     private function privateBar() {
-        // Returns interesting stuff
+        // Does fancy stuff
     }
 }
 ```
 
-To extend the class, you first have to create a new class somewhere in your code, that contains your extension.
-The location and namespace is up to you, the only think you need to do is to extend the special parent class.
+To extend the class, you first have to create a new class somewhere in your code, that's your extension.
+The location and namespace is up to you, the only thing you need to do is to extend the SpecialParentClass™.
 
-The parent class WILL BE (after you did all the steps configured) GENERATED for you based on the name of
+Said SpecialParentClass™ WILL BE (after you did all the steps described) GENERATED for you based on the name of
 the class you want to override.
 
 So for our example: `ForeignVendor\ForeignNamespace\TargetClass`,
-the generated class will be called `ForeignVendor\ForeignNamespace\LockpickClassOverrideTargetClass` instead.
+the SpecialParentClass™ will be called `ForeignVendor\ForeignNamespace\LockpickClassOverrideTargetClass` instead.
 The `LockpickClassOverride` part will be the prefix of every generated class.
 
-IMPORTANT: The class will probably not exist when you create your extension class, so you can't rely on
-your IDE's autocompletion there.
+**IMPORTANT: The SpecialParentClass™ will probably not exist when you create your extension class, so you can't rely on
+your IDE's autocompletion there. However, it will be there when the code tries to access it**
 
 ```php
 <?php
 namespace YourVendor\YourNamespace;
 use ForeignVendor\ForeignNamespace\LockpickClassOverrideTargetClass;
 class ExtendedTargetClass extends LockpickClassOverrideTargetClass {
-    public function foo(){
-        // Do YOUR fancy stuff
-        parent::foo();
+    public function foo(?bool $useExtension = null){
         // Use private members of the parent without problems
         $this->privateBar();
+        
+        // You can implement your own features
+        if($useExtension !== false){
+            return 'bar';
+        }
+        
+        // Or can call the parent implementation without problems 
+        return parent::foo();
     }
 }
 ```
 
-After that you can call the class overrider somewhere in your code, BEFORE the actual implementation is autoloaded.
+After that, you can call the Class Overrider somewhere in your code, BEFORE the actual implementation is included.
 I would suggest configuring the overrider near-ish to where you called `ClassOverrider::init`.
 
 ```php
@@ -206,15 +250,26 @@ use YourVendor\YourNamespace\ExtendedTargetClass;
 ClassOverrider::registerOverride(TargetClass::class, ExtendedTargetClass::class);
 ```
 
-Now the generator will create a copy of the `TargetClass` that under the name `LockpickClassOverrideTargetClass`.
-Your implementation will extend the class copy as a child class.
-With that, you can overwrite the parent implementation or extend existing members like you would usually:
+Now you are able to create an instance of the class as if nothing happened:
 
-1. All private members of the parent class (methods and properties) are converted into protected members so that you can
-   extend them, too.
-2. Your implementation in class ExtendedTargetClass will be aliased with the original class name.
+```php
+<?php
 
-With that in place, every part of the code will now use your implementation instead of the original class.
+use ForeignVendor\ForeignNamespace\TargetClass;
+$i = new TargetClass();
+```
+
+However, even if it looks like `TargetClass` it does not entirely quack like `TargetClass` anymore.
+The magic already took place, and you did not even notice it; If you do `echo $i->foo()` the result will now be "bar"
+instead of "foo". The autoloader (Resp. the OverrideStackResolver) added two files for you:
+
+- First; the "clone", or as I call it SpecialParentClass™, basically a carbon copy of `TargetClass` but with all
+  properties, methods and constants converted to "protected" (if they were private before). The "final" modifier was
+  also removed from the class or methods signatures.
+- Second; the "alias" which creates an empty husk with name `ForeignVendor\ForeignNamespace\TargetClass` that extends
+  your own extension class.
+
+With that in place, every part of the code will now use your implementation/extension instead of the original class.
 
 #### Installation part 2 - or how to get rid of the copies
 
@@ -233,6 +288,10 @@ copies.
 - Only works for classes that follow the PSR-4 guideline with a single class per file
 - Can cause issues if you are using PHP preloading (especially in Symfony), you need to remove all classes found
   in `ClassOverrider::getNotPreloadableClasses();` somehow, depending on your framework
+
+## Framework integration
+
+- [Symfony bundle](https://github.com/Neunerlei/lockpick-bundle)
 
 ## Postcardware
 
