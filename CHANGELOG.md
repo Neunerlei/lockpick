@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.5](https://github.com/Neunerlei/lockpick/compare/v0.0.4...v0.0.5) (2023-01-04)
+
+
+### Bug Fixes
+
+* **Override:** ensure copy class with full namespace in ClassOverrideContentFilterEvent ([6880364](https://github.com/Neunerlei/lockpick/commit/688036485e4d9f19d2e2a336da995fb602a5198b))
+
 ### [0.0.4](https://github.com/Neunerlei/lockpick/compare/v0.0.3...v0.0.4) (2023-01-03)
 
 ### [0.0.3](https://github.com/Neunerlei/lockpick/compare/v0.0.2...v0.0.3) (2023-01-03)
