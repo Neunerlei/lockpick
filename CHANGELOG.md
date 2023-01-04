@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.6](https://github.com/Neunerlei/lockpick/compare/v0.0.5...v0.0.6) (2023-01-04)
+
+
+### Features
+
+* **Override:** allow forced build of all registered overrides ([bcac446](https://github.com/Neunerlei/lockpick/commit/bcac446964357ecbfdaaab6c4b40d06253dae37a))
+
+
+### Bug Fixes
+
+* **Override:** remove dev fragment ([7408aae](https://github.com/Neunerlei/lockpick/commit/7408aae0fe57658176c1a66761afb39ca5255a88))
+
 ### [0.0.5](https://github.com/Neunerlei/lockpick/compare/v0.0.4...v0.0.5) (2023-01-04)
 
 
