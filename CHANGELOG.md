@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.10](https://github.com/Neunerlei/lockpick/compare/v0.0.9...v0.0.10) (2023-03-05)
+
+
+### Bug Fixes
+
+* **Util:** ensure that ClassLockpick can actually use private inherited methods and properties ([f4bb086](https://github.com/Neunerlei/lockpick/commit/f4bb086b1a922232b72dc9e27c8ea817b0db34ab))
+
 ### [0.0.9](https://github.com/Neunerlei/lockpick/compare/v0.0.8...v0.0.9) (2023-01-04)
 
 
