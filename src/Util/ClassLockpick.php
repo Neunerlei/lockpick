@@ -6,22 +6,56 @@ namespace Neunerlei\Lockpick\Util;
 
 
 use InvalidArgumentException;
-use ReflectionObject;
+use ReflectionClass;
 
 class ClassLockpick
 {
+    protected string $className;
     protected object $instance;
-    protected ReflectionObject $reflector;
+    protected ReflectionClass $reflector;
+
+    protected static array $reflectors = [];
+    protected static array $definitions = [];
 
     public function __construct(object $instance)
     {
-        $this->reflector = new ReflectionObject($instance);
+        $this->className = get_class($instance);
+        $this->reflector = static::getReflector($this->className);
 
         if (!$this->reflector->isUserDefined()) {
             throw new InvalidArgumentException('You can only pick locks of user defined classes!');
         }
 
         $this->instance = $instance;
+    }
+
+    /**
+     * Returns the list of all properties that are available in the object
+     * @return array
+     */
+    public function getPropertyNames(): array
+    {
+        $id = $this->className . '-propertyNames';
+        if (isset(static::$definitions[$id])) {
+            return static::$definitions[$id];
+        }
+
+        $list = [];
+        static::walkInheritancePath($this->reflector, 'internal', 'propertyNames',
+            static function (ReflectionClass $ref) use (&$list) {
+                foreach ($ref->getProperties() as $property) {
+                    if ($property->isStatic()) {
+                        continue;
+                    }
+
+                    $list[] = $property->getName();
+                }
+
+                return null;
+            }
+        );
+
+        return static::$definitions[$id] = array_values(array_unique($list));
     }
 
     /**
@@ -33,9 +67,13 @@ class ClassLockpick
      */
     public function setPropertyValue(string $name, mixed $value): self
     {
-        if (!$this->reflector->hasProperty($name)) {
-            if ($this->reflector->hasMethod('__set')) {
-                $this->reflector->getMethod('__set')->invoke($this->instance, $name, $value);
+        $ref = static::getPropertyReflection($this->reflector, $name);
+
+        if (!$ref) {
+            $ref = static::getMethodReflection($this->reflector, '__set');
+            if ($ref) {
+                $ref->invoke($this->instance, $name, $value);
+                return $this;
             }
 
             throw new InvalidArgumentException(sprintf(
@@ -45,13 +83,15 @@ class ClassLockpick
             ));
         }
 
-        $prop = $this->reflector->getProperty($name);
-
-        if (!$prop->isPublic()) {
-            $prop->setAccessible(true);
+        if ($ref->isStatic()) {
+            throw new InvalidArgumentException(sprintf(
+                'The property: "%s" in class: "%s" is considered static!',
+                $name,
+                get_class($this->instance)
+            ));
         }
 
-        $prop->setValue($this->instance, $value);
+        $ref->setValue($this->instance, $value);
 
         return $this;
     }
@@ -65,22 +105,23 @@ class ClassLockpick
      */
     public function getPropertyValue(string $name, mixed $default = null): mixed
     {
-        if (!$this->reflector->hasProperty($name)) {
-            if ($this->reflector->hasMethod('__get')) {
-                return $this->reflector->getMethod('__get')->invoke($this->instance, $name);
+        $ref = static::getPropertyReflection($this->reflector, $name);
+
+        if (!$ref) {
+            $ref = static::getMethodReflection($this->reflector, '__get');
+            if ($ref) {
+                return $ref->invoke($this->instance, $name);
             }
 
             return $default;
         }
 
-        $prop = $this->reflector->getProperty($name);
-
-        if (!$prop->isPublic()) {
-            $prop->setAccessible(true);
+        if ($ref->isStatic()) {
+            return $default;
         }
 
         try {
-            return $prop->getValue($this->instance);
+            return $ref->getValue($this->instance);
         } catch (\Throwable) {
             return $default;
         }
@@ -96,19 +137,23 @@ class ClassLockpick
      */
     public function hasProperty(string $name, bool $tryMagicMethods = false): bool
     {
-        if ($this->reflector->hasProperty($name)) {
+        $ref = static::getPropertyReflection($this->reflector, $name);
+
+        if ($ref) {
             // If we have the property but is static, we consider it as not being part of this object
-            return !($this->reflector->getProperty($name)->isStatic());
+            return !$ref->isStatic();
         }
 
         if ($tryMagicMethods) {
-            if ($this->reflector->hasMethod('__isset')) {
-                return $this->reflector->getMethod('__isset')->invoke($this->instance, $name);
+            $ref = static::getMethodReflection($this->reflector, '__isset');
+            if ($ref) {
+                return $ref->invoke($this->instance, $name);
             }
 
-            if ($this->reflector->hasMethod('__get')) {
+            $ref = static::getMethodReflection($this->reflector, '__get');
+            if ($ref) {
                 try {
-                    return !empty($this->reflector->getMethod('__get')->invoke($this->instance, $name));
+                    return !empty($ref->invoke($this->instance, $name));
                 } catch (\Throwable) {
                     return false;
                 }
@@ -128,9 +173,12 @@ class ClassLockpick
     {
         $args = $args ?? [];
 
-        if (!$this->reflector->hasMethod($name)) {
-            if ($this->reflector->hasMethod('__call')) {
-                $this->reflector->getMethod('__call')->invokeArgs($this->instance, $args);
+        $ref = static::getMethodReflection($this->reflector, $name);
+
+        if (!isset($ref) || $ref->isStatic()) {
+            $ref = static::getMethodReflection($this->reflector, '__call');
+            if ($ref) {
+                return $ref->invokeArgs($this->instance, $args);
             }
 
             throw new InvalidArgumentException(sprintf(
@@ -140,13 +188,7 @@ class ClassLockpick
             ));
         }
 
-        $method = $this->reflector->getMethod($name);
-
-        if (!$method->isPublic()) {
-            $method->setAccessible(true);
-        }
-
-        return $method->invokeArgs($this->instance, $args);
+        return $ref->invokeArgs($this->instance, $args);
     }
 
     /**
@@ -156,7 +198,7 @@ class ClassLockpick
      */
     public function hasMethod(string $name): bool
     {
-        return $this->reflector->hasMethod($name) && !$this->reflector->getMethod($name)->isStatic();
+        return !(static::getMethodReflection($this->reflector, $name)?->isStatic());
     }
 
     /**
@@ -164,13 +206,13 @@ class ClassLockpick
      */
     public function __isset(string $name): bool
     {
-        if (!$this->hasProperty($name)) {
+        $ref = static::getPropertyReflection($this->reflector, $name);
+
+        if (!$ref || $ref->isStatic()) {
             return false;
         }
 
-        $prop = $this->reflector->getProperty($name);
-        $prop->setAccessible(true);
-        return $prop->isInitialized($this->instance);
+        return $ref->isInitialized($this->instance);
     }
 
     /**
@@ -212,78 +254,66 @@ class ClassLockpick
     /**
      * Checks if the given class has a static property with the given name
      * @param string $className
-     * @param string $property
+     * @param string $name
      * @return bool
      */
-    public static function hasStaticProperty(string $className, string $property): bool
+    public static function hasStaticProperty(string $className, string $name): bool
     {
-        $ref = (new \ReflectionClass($className));
-        if (!$ref->hasProperty($property)) {
-            return false;
-        }
-        if (!$ref->getProperty($property)->isStatic()) {
-            return false;
-        }
-        return true;
+        return (bool)static::getPropertyReflection($className, $name)?->isStatic();
     }
 
     /**
      * Sets the value of a static property
      *
      * @param string $className
-     * @param string $property
-     * @param           $value
+     * @param string $name
+     * @param mixed $value
      */
-    public static function setStaticPropertyValue(string $className, string $property, $value): void
+    public static function setStaticPropertyValue(string $className, string $name, mixed $value): void
     {
-        $ref = (new \ReflectionClass($className));
-        if (!$ref->hasProperty($property)) {
+        $ref = static::getPropertyReflection($className, $name);
+
+        if (!$ref) {
             throw new InvalidArgumentException(sprintf(
                 'The property: "%s" in class: "%s" does not exist!',
-                $property,
+                $name,
                 $className
             ));
         }
 
-        $prop = $ref->getProperty($property);
-
-        if (!$prop->isStatic()) {
+        if (!$ref->isStatic()) {
             throw new InvalidArgumentException(sprintf(
                 'The property: "%s" in class: "%s" is not static!',
-                $property,
+                $name,
                 $className
             ));
         }
 
-        $prop->setAccessible(true);
-        $prop->setValue(null, $value);
+        $ref->setValue(null, $value);
     }
 
     /**
      * Returns the value of a static property of a class
      *
      * @param string $className
-     * @param string $property
+     * @param string $name
      * @param mixed|null $default
      * @return mixed
      */
-    public static function getStaticPropertyValue(string $className, string $property, mixed $default = null): mixed
+    public static function getStaticPropertyValue(string $className, string $name, mixed $default = null): mixed
     {
-        $ref = (new \ReflectionClass($className));
-        if (!$ref->hasProperty($property)) {
+        $ref = static::getPropertyReflection($className, $name);
+
+        if (!$ref) {
             return $default;
         }
 
-        $prop = $ref->getProperty($property);
-
-        if (!$prop->isStatic()) {
+        if (!$ref->isStatic()) {
             return $default;
         }
-
-        $prop->setAccessible(true);
 
         try {
-            return $prop->getValue();
+            return $ref->getValue();
         } catch (\Throwable) {
             return $default;
         }
@@ -297,14 +327,7 @@ class ClassLockpick
      */
     public static function hasStaticMethod(string $className, string $method): bool
     {
-        $ref = (new \ReflectionClass($className));
-        if (!$ref->hasMethod($method)) {
-            return false;
-        }
-        if (!$ref->getMethod($method)->isStatic()) {
-            return false;
-        }
-        return true;
+        return (bool)static::getMethodReflection($className, $method)?->isStatic();
     }
 
     /**
@@ -318,12 +341,10 @@ class ClassLockpick
      */
     public static function runStaticMethod(string $className, string $method, ?array $args = null): mixed
     {
-        $ref = (new \ReflectionClass($className));
-        if (!$ref->hasMethod($method)) {
-            if ($ref->hasMethod('__callStatic')) {
-                $ref->getMethod('__callStatic')->invokeArgs(null, $args ?? []);
-            }
+        $ref = static::getMethodReflection($className, $method) ??
+            static::getMethodReflection($className, '__callStatic');
 
+        if (!$ref) {
             throw new InvalidArgumentException(sprintf(
                 'The method: "%s" in class: "%s" does not exist!',
                 $method,
@@ -331,10 +352,7 @@ class ClassLockpick
             ));
         }
 
-        $methodRef = $ref->getMethod($method);
-        $methodRef->setAccessible(true);
-
-        if (!$methodRef->isStatic()) {
+        if (!$ref->isStatic()) {
             throw new InvalidArgumentException(sprintf(
                 'The method: "%s" in class: "%s" is not static!',
                 $method,
@@ -344,6 +362,110 @@ class ClassLockpick
 
         $args = $args ?? [];
 
-        return $methodRef->invoke(null, ...$args);
+        return $ref->invoke(null, ...$args);
+    }
+
+    /**
+     * Returns either the reflection object of a class property or null if there is none in the inheritance
+     *
+     * @param string|ReflectionClass $src The reflector/class name to look on
+     * @param string $name The name of the property to look for
+     *
+     * @return \ReflectionProperty|null
+     */
+    protected static function getPropertyReflection(string|ReflectionClass $src, string $name): ?\ReflectionProperty
+    {
+        return static::walkInheritancePath($src, 'property', $name,
+            static function (ReflectionClass $ref, string $name) {
+                if ($ref->hasProperty($name)) {
+                    $prop = $ref->getProperty($name);
+                    $prop->setAccessible(true);
+                    return $prop;
+                }
+
+                return null;
+            }
+        );
+    }
+
+    /**
+     * Returns either the reflection object of a class method or null if there is none in the inheritance
+     *
+     * @param string|ReflectionClass $src The reflector/class name to look on
+     * @param string $name The name of the method you want to look up
+     *
+     * @return \ReflectionMethod|null
+     */
+    protected static function getMethodReflection(string|ReflectionClass $src, string $name): ?\ReflectionMethod
+    {
+        return static::walkInheritancePath($src, 'method', $name,
+            static function (ReflectionClass $ref, string $name) {
+                if ($ref->hasMethod($name)) {
+                    $method = $ref->getMethod($name);
+                    $method->setAccessible(true);
+                    return $method;
+                }
+
+                return null;
+            }
+        );
+    }
+
+    /**
+     * Internal helper to either resolve a reflection object or use the given one
+     *
+     * @param string|ReflectionClass $src Either the name of a class or a reflectionClass object
+     *
+     * @return ReflectionClass
+     */
+    protected static function getReflector(string|ReflectionClass $src): ReflectionClass
+    {
+        if ($src instanceof ReflectionClass) {
+            return $src;
+        }
+
+        return static::$reflectors[$src] = new ReflectionClass($src);
+    }
+
+    /**
+     * Because private properties/classes are only resolved on the actual class, and are not
+     * inherited via reflection, we have to iterate the whole inheritance tree of a class to find
+     * all possible properties and methods on it.
+     *
+     * To avoid lag and repetitive work, we resolve either a property or a method and cache them in a local property.
+     *
+     * @param string|ReflectionClass $src The reflector/class name to walk through
+     * @param string $type The type of the element that should be looked up e.g. "method" or "property"
+     * @param string $key The "name" of the element that should be looked up
+     * @param callable $walker The walker that iterates every level of the inheritance to search for the required
+     *                         element. If it returns something other than NULL the walking will be stopped.
+     * @return mixed|null
+     */
+    protected static function walkInheritancePath(
+        string|ReflectionClass $src, string $type, string $key, callable $walker): mixed
+    {
+        $ref = static::getReflector($src);
+        $id = implode('-', [
+            $ref->getName(),
+            $type,
+            $key
+        ]);
+
+        if (isset(static::$definitions[$id])) {
+            return static::$definitions[$id];
+        }
+
+        $resolved = null;
+        while ($ref) {
+            $resolved = $walker($ref, $key);
+
+            if ($resolved !== null) {
+                break;
+            }
+
+            $ref = $ref->getParentClass();
+        }
+
+        return static::$definitions[$id] = $resolved;
     }
 }
